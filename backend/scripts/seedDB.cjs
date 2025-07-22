@@ -6,6 +6,10 @@ const dbPath = path.resolve(__dirname, '../dev.sqlite');
 const db = new Database(dbPath);
 
 try {
+    // Delete existing data in collections and requests tables
+    db.prepare('DELETE FROM requests').run();
+    db.prepare('DELETE FROM collections').run();
+
     // Prepare statements
     const insertCollection = db.prepare(
         'INSERT INTO collections (name) VALUES (?)'

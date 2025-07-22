@@ -14,7 +14,7 @@
     "migrate:generate": "drizzle-kit generate",
     "migrate:push": "drizzle-kit push",
     "inspect-db": "node scripts/inspectDB.cjs",
-    "seed": "node scripts/seed.ts"
+    "seed": "node scripts/seedDB.cjs"
   },
   "peerDependencies": {
     "typescript": "^5"

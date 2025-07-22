@@ -164,6 +164,16 @@ export default function RequestPage() {
         setError(null)
     }
 
+    const clearRequestBuilder = () => {
+        setMethod('GET')
+        setUrl('')
+        setPathParams([])
+        setQueryParams([])
+        setHeaders([])
+        setBody('{}')
+        clearResponse()
+    }
+
     return (
         <div className="p-4 space-y-6">
             {/* Header with collection name & link */}
@@ -214,8 +224,13 @@ export default function RequestPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Builder */}
                 <Card>
-                    <CardHeader>
+                    <CardHeader className="flex items-center justify-between" style={{flexDirection: 'row'}}>
                         <CardTitle>Build Request</CardTitle>
+                        <Button
+                            variant="destructive"
+                            onClick={clearRequestBuilder}>
+                            Reset Builder
+                        </Button>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {/* Method & URL */}
