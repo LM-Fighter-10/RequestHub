@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { rpc } from '@/lib/rpc'
+import { api } from '@/lib/rpc'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
@@ -12,30 +12,36 @@ export default function CollectionsPage() {
     const [name, setName] = useState('');
     const [loading, setLoading] = useState(false)
 
+    useEffect(() => {
+        setLoading(true);
+            api.collections
+              .get()
+              .then(({ data }) => {
+                  // if data is null, default to an empty array
+                  setCollections(data ?? [])
+              })
+            .catch(console.error)
+            .finally(() => setLoading(false));
+    }, [])
+
     const create = async () => {
         if (!name) return;
         setLoading(true);
-        const created = await rpc<{ id: number; name: string }[]>('createCollection', { name });
+        // @ts-ignore
+        const { data: created } = await api.collections.post({ name })
         setLoading(false);
         // @ts-ignore
         setCollections((cs) => [...cs, created]);
         setName('');
+
     }
 
     const remove = async (id: number) => {
         setLoading(true);
-        await rpc('deleteCollection', { id });
+        await api.collections[id.toString()].delete()
         setLoading(false);
         setCollections((cs) => cs.filter((c) => c.id !== id));
     }
-
-    useEffect(() => {
-        setLoading(true);
-        rpc<{ id: number; name: string }[]>('listCollections')
-            .then(setCollections)
-            .catch(console.error)
-            .finally(() => setLoading(false));
-    }, [])
 
     return (
         <Card>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from '@tanstack/react-router'
-import { rpc } from '@/lib/rpc'
+import { api } from '@/lib/rpc'
 import { collectionsRoute } from '@/router'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -58,11 +58,9 @@ export default function RequestPage() {
             if (collectionId != null) {
                 setLoading(true)
                 try {
-                    const col = await rpc<{ id: number; name: string }>(
-                        'getCollection',
-                        { id: collectionId },
-                    )
-                    setCollectionName(col.name)
+                    const { data: col } = await api.collections[collectionId.toString()].get()
+                    // @ts-ignore
+                    setCollectionName(col?.name)
                 } catch {
                     setCollectionName(`Collection ${collectionId}`)
                 } finally {
@@ -74,10 +72,11 @@ export default function RequestPage() {
 
             setLoading(true)
             try {
-                const reqs = await rpc<SavedRequest[]>(
-                    'listRequests',
-                    collectionId ? { collectionId } : {},
-                )
+                const { data: reqs } =
+                    collectionId != null
+                        ? await api.collections[collectionId.toString()].requests.get()
+                        : await api.requests.get()
+                // @ts-ignore
                 setSavedRequests(reqs)
             } catch (err) {
                 console.error('Failed to load requests:', err)
@@ -121,7 +120,7 @@ export default function RequestPage() {
 
         setLoading(true)
         try {
-            let options = {
+            const options = {
                 method,
                 url,
                 pathParams,
@@ -129,21 +128,25 @@ export default function RequestPage() {
                 headers: hdrs,
                 body: body ? JSON.parse(body) : null
             }
-            if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
-                // For GET/HEAD/OPTIONS, body should be null
+
+            // For GET/HEAD/OPTIONS, no body
+            if (['GET', 'HEAD', 'OPTIONS'].includes(method)) {
                 options.body = null
             }
-            const result = await rpc('sendRequest', options)
-            setResponse(result);
 
-            // persist this request via your RPC & immediately update UI
-            const newReq =
-                await rpc<SavedRequest>('createRequest',
-                    {
-                        ...options,
-                        collectionId: collectionId ?? null,
-                        name: `Request ${Date.now()}`
-                    })
+            // If you exposed sendRequest as REST:
+            // @ts-ignore
+            const { data: result } = await api.sendRequest.post(options)
+            setResponse(result)
+
+            // persist via REST
+            const { data: newReq } = await api.requests.post({
+                ...options,
+                // @ts-ignore
+                collectionId: collectionId ?? null,
+                name: `Request ${Date.now()}`
+            })
+            // @ts-ignore
             setSavedRequests((prev) => [...prev, newReq])
         } catch (e: any) {
             setError(e.message)
@@ -155,7 +158,7 @@ export default function RequestPage() {
 
     // Delete a saved request
     const removeRequest = async (id: number) => {
-        await rpc('deleteRequest', { id })
+        await api.requests[id.toString()].delete()
         setSavedRequests((s) => s.filter((r) => r.id !== id))
     }
 
@@ -190,17 +193,15 @@ export default function RequestPage() {
                     <CardTitle>Saved Requests</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {
-                        loading? (
-                            <div className="flex justify-center py-8">
-                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-blue-900" />
-                            </div>
-                        ) : (
-                            <ul className="list-disc pl-5 space-y-1">
-                                {savedRequests?.filter(r => {
-                                    // Filter requests by collection if specified
-                                    return collectionId == null || r.collectionId === collectionId
-                                }).map((r) => (
+                    {loading ? (
+                        <div className="flex justify-center py-8">
+                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-blue-900" />
+                        </div>
+                    ) : (
+                        <ul className="list-disc pl-5 space-y-1">
+                            {savedRequests
+                                .filter((r) => (collectionId == null ? true : r.collectionId === collectionId))
+                                .map((r) => (
                                     <li key={r.id}>
                                         <div className="flex justify-between items-center">
                                             <span className="text-gray-700">{r.name}</span>
@@ -214,9 +215,8 @@ export default function RequestPage() {
                                         </div>
                                     </li>
                                 ))}
-                            </ul>
-                        )
-                    }
+                        </ul>
+                    )}
                 </CardContent>
             </Card>
 
@@ -224,11 +224,12 @@ export default function RequestPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Builder */}
                 <Card>
-                    <CardHeader className="flex items-center justify-between" style={{flexDirection: 'row'}}>
+                    <CardHeader
+                        className="flex items-center justify-between"
+                        style={{ flexDirection: 'row' }}
+                    >
                         <CardTitle>Build Request</CardTitle>
-                        <Button
-                            variant="destructive"
-                            onClick={clearRequestBuilder}>
+                        <Button variant="destructive" onClick={clearRequestBuilder}>
                             Reset Builder
                         </Button>
                     </CardHeader>
@@ -236,7 +237,7 @@ export default function RequestPage() {
                         {/* Method & URL */}
                         <div className="flex space-x-2">
                             <Select value={method} onValueChange={setMethod}>
-                                <SelectTrigger style={{width: 'fit-content'}}>
+                                <SelectTrigger style={{ width: 'fit-content' }}>
                                     <SelectValue placeholder="Method" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -406,11 +407,9 @@ export default function RequestPage() {
 
                 {/* Response Viewer */}
                 <Card>
-                    <CardHeader className="flex items-center justify-between" style={{flexDirection: 'row'}}>
+                    <CardHeader className="flex items-center justify-between" style={{ flexDirection: 'row' }}>
                         <CardTitle>Response</CardTitle>
-                        <Button
-                            variant="destructive"
-                            onClick={clearResponse}>
+                        <Button variant="destructive" onClick={clearResponse}>
                             Clear
                         </Button>
                     </CardHeader>
