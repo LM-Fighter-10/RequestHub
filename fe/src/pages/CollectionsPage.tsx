@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {Link} from '@tanstack/react-router'
 import { api } from '@/lib/rpc'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -6,8 +6,8 @@ import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Trash2 } from 'lucide-react'
-import { Route as RequestRoute } from '@/routes/request/$collectionId'
-import { Route as RequestIndexRoute } from '@/routes/request/index'
+import { Route as RequestRoute } from '@/routes/request/$collectionId.tsx'
+import { Route as RequestIndexRoute } from '@/routes/request'
 
 export default function CollectionsPage() {
 
@@ -16,7 +16,17 @@ export default function CollectionsPage() {
     const [name, setName] = useState('');
     const [loading, setLoading] = useState(false)
 
-
+    useEffect(() => {
+        setLoading(true);
+        api.collections
+            .get()
+            .then(({ data }) => {
+                // if data is null, default to an empty array
+                setCollections(data ?? [])
+            })
+            .catch(console.error)
+            .finally(() => setLoading(false));
+    }, [])
 
     const create = async () => {
         if (!name) return;

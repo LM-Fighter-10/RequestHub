@@ -38,7 +38,7 @@ export default function RequestPage() {
     const rawId = params.collectionId
     const collectionId = rawId ? Number(rawId) : undefined
 
-    const [collectionName, setCollectionName] = useState<string>('All Requests')
+    const [collectionName, setCollectionName] = useState<string>('')
     const [savedRequests, setSavedRequests] = useState<SavedRequest[]>([])
     const [method, setMethod] = useState('GET')
     const [url, setUrl] = useState('')
@@ -60,7 +60,7 @@ export default function RequestPage() {
                 try {
                     const { data: col } = await api.collections[collectionId.toString()].get()
                     // @ts-ignore
-                    setCollectionName(col?.name)
+                    setCollectionName(col[0]?.name)
                 } catch {
                     setCollectionName(`Collection ${collectionId}`)
                 } finally {
@@ -182,7 +182,7 @@ export default function RequestPage() {
             {/* Header with collection name & link */}
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold">Requests: {collectionName}</h1>
-                <Link to={collectionsRoute.to} className="text-blue-600 hover:underline">
+                <Link to={collectionsRoute.path} className="text-blue-600 hover:underline">
                     ← Back to Collections
                 </Link>
             </div>

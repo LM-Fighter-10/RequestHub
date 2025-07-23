@@ -1,44 +1,15 @@
-// app/routes/__root.tsx
-import { createRootRoute, HeadContent, Scripts } from '@tanstack/react-router'
-import { Outlet } from '@tanstack/react-router'
-import * as React from 'react'
+import { createRootRoute, Link, Outlet } from '@tanstack/react-router'
 
-export const Route = createRootRoute({
-    head: () => ({
-        meta: [
-            {
-                charSet: 'utf-8',
-            },
-            {
-                name: 'viewport',
-                content: 'width=device-width, initial-scale=1',
-            },
-            {
-                title: 'TanStack Start Starter',
-            },
-        ],
-    }),
-    component: RootComponent,
+export const Route:any = createRootRoute({
+    component: () => (
+        <div className="min-h-screen flex flex-col">
+            <nav className="bg-gray-100 p-4 flex space-x-4">
+                <Link to="/">Collections</Link>
+                <Link to="/request">Requests</Link>
+            </nav>
+            <main className="flex-1 p-4">
+                <Outlet />
+            </main>
+        </div>
+    ),
 })
-
-function RootComponent() {
-    return (
-        <RootDocument>
-            <Outlet />
-        </RootDocument>
-    )
-}
-
-function RootDocument({ children }: { children: React.ReactNode }) {
-    return (
-        <html>
-        <head>
-            <HeadContent />
-        </head>
-        <body>
-        {children}
-        <Scripts />
-        </body>
-        </html>
-    )
-}

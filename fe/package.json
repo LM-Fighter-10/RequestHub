@@ -5,8 +5,8 @@
   "scripts": {
     "generate-routes": "tsr generate",
     "watch-routes": "tsr watch",
-    "dev": "vite --port 5173",
-    "start": "vite --port 5173",
+    "dev": "tsr generate && vite --port 5173",
+    "start": "tsr generate && vite --port 5173",
     "build": "vite build && tsc",
     "serve": "vite preview",
     "test": "vitest run"

@@ -8,20 +8,34 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
+import { createFileRoute } from '@tanstack/react-router'
+
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RequestIndexRouteImport } from './routes/request/index'
+import { Route as RequestLayoutRouteImport } from './routes/request/_layout'
 import { Route as RequestCollectionIdRouteImport } from './routes/request/$collectionId'
 
+const RequestRouteImport = createFileRoute('/request')()
+
+const RequestRoute = RequestRouteImport.update({
+  id: '/request',
+  path: '/request',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RequestIndexRoute = RequestIndexRouteImport.update({
-  id: '/request/',
-  path: '/request/',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => RequestRoute,
+} as any)
+const RequestLayoutRoute = RequestLayoutRouteImport.update({
+  id: '/_layout',
+  getParentRoute: () => RequestRoute,
 } as any)
 const RequestCollectionIdRoute = RequestCollectionIdRouteImport.update({
   id: '/request/$collectionId',
@@ -32,7 +46,8 @@ const RequestCollectionIdRoute = RequestCollectionIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/request/$collectionId': typeof RequestCollectionIdRoute
-  '/request': typeof RequestIndexRoute
+  '/request': typeof RequestLayoutRoute
+  '/request/': typeof RequestIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -43,24 +58,39 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/request/$collectionId': typeof RequestCollectionIdRoute
+  '/request': typeof RequestRouteWithChildren
+  '/request/_layout': typeof RequestLayoutRoute
   '/request/': typeof RequestIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/request/$collectionId' | '/request'
+  fullPaths: '/' | '/request/$collectionId' | '/request' | '/request/'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/request/$collectionId' | '/request'
-  id: '__root__' | '/' | '/request/$collectionId' | '/request/'
+  id:
+    | '__root__'
+    | '/'
+    | '/request/$collectionId'
+    | '/request'
+    | '/request/_layout'
+    | '/request/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   RequestCollectionIdRoute: typeof RequestCollectionIdRoute
-  RequestIndexRoute: typeof RequestIndexRoute
+  RequestRoute: typeof RequestRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/request': {
+      id: '/request'
+      path: '/request'
+      fullPath: '/request'
+      preLoaderRoute: typeof RequestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -70,10 +100,17 @@ declare module '@tanstack/react-router' {
     }
     '/request/': {
       id: '/request/'
+      path: '/'
+      fullPath: '/request/'
+      preLoaderRoute: typeof RequestIndexRouteImport
+      parentRoute: typeof RequestRoute
+    }
+    '/request/_layout': {
+      id: '/request/_layout'
       path: '/request'
       fullPath: '/request'
-      preLoaderRoute: typeof RequestIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof RequestLayoutRouteImport
+      parentRoute: typeof RequestRoute
     }
     '/request/$collectionId': {
       id: '/request/$collectionId'
@@ -85,10 +122,23 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface RequestRouteChildren {
+  RequestLayoutRoute: typeof RequestLayoutRoute
+  RequestIndexRoute: typeof RequestIndexRoute
+}
+
+const RequestRouteChildren: RequestRouteChildren = {
+  RequestLayoutRoute: RequestLayoutRoute,
+  RequestIndexRoute: RequestIndexRoute,
+}
+
+const RequestRouteWithChildren =
+  RequestRoute._addFileChildren(RequestRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   RequestCollectionIdRoute: RequestCollectionIdRoute,
-  RequestIndexRoute: RequestIndexRoute,
+  RequestRoute: RequestRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
