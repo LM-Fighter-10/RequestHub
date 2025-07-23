@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from '@tanstack/react-router'
+import { Link } from '@tanstack/react-router'
 import { api } from '@/lib/rpc'
 import { Route as collectionsRoute } from '@/routes/index'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Route as RequestIndexRoute } from '@/routes/request/index'
+import { Route as RequestCollectionRoute } from '@/routes/request/$collectionId'
 import {
     Select,
     SelectTrigger,
@@ -33,10 +35,14 @@ type SavedRequest = {
     body: any
 }
 
-export default function RequestPage() {
-    const params = useParams({ strict: false })
-    const rawId = params.collectionId
-    const collectionId = rawId ? Number(rawId) : undefined
+export default function RequestPage({collId}: { collId?: number | undefined }) {
+    const collectionId = collId ? Number(collId) : undefined
+    let dataLoader = [];
+    if (collectionId) {
+        dataLoader = RequestCollectionRoute.useLoaderData()
+    } else {
+        dataLoader = RequestIndexRoute.useLoaderData()
+    }
 
     const [collectionName, setCollectionName] = useState<string>('')
     const [savedRequests, setSavedRequests] = useState<SavedRequest[]>([])
@@ -55,14 +61,12 @@ export default function RequestPage() {
     useEffect(() => {
         const load = async () => {
             // Load collection name
-            if (collectionId != null) {
+            if (collectionId) {
                 setLoading(true)
                 try {
-                    const { data: col } = await api.collections[collectionId.toString()].get()
-                    // @ts-ignore
-                    setCollectionName(col[0]?.name)
+                    setCollectionName(dataLoader.colName)
                 } catch {
-                    setCollectionName(`Collection ${collectionId}`)
+                    setCollectionName(`Collection ${collId}`)
                 } finally {
                     setLoading(false)
                 }
@@ -72,12 +76,10 @@ export default function RequestPage() {
 
             setLoading(true)
             try {
-                const { data: reqs } =
-                    collectionId != null
-                        ? await api.collections[collectionId.toString()].requests.get()
-                        : await api.requests.get()
-                // @ts-ignore
-                setSavedRequests(reqs)
+                !Array.isArray(dataLoader)?
+                    setSavedRequests(await dataLoader.data)
+                :
+                    setSavedRequests(dataLoader);
             } catch (err) {
                 console.error('Failed to load requests:', err)
             } finally {
@@ -182,7 +184,7 @@ export default function RequestPage() {
             {/* Header with collection name & link */}
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold">Requests: {collectionName}</h1>
-                <Link to={collectionsRoute.path} className="text-blue-600 hover:underline">
+                <Link to={collectionsRoute.to} className="text-blue-600 hover:underline">
                     ← Back to Collections
                 </Link>
             </div>
@@ -199,8 +201,8 @@ export default function RequestPage() {
                         </div>
                     ) : (
                         <ul className="list-disc pl-5 space-y-1">
-                            {savedRequests
-                                .filter((r) => (collectionId == null ? true : r.collectionId === collectionId))
+                            {savedRequests?.filter((r) =>
+                                (collectionId == null ? true : r.collectionId === collectionId))
                                 .map((r) => (
                                     <li key={r.id}>
                                         <div className="flex justify-between items-center">

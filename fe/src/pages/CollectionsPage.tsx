@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import {Link} from '@tanstack/react-router'
+import {Link, useLoaderData} from '@tanstack/react-router'
 import { api } from '@/lib/rpc'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '@/components/ui/table'
@@ -10,23 +10,16 @@ import { Route as RequestRoute } from '@/routes/request/$collectionId.tsx'
 import { Route as RequestIndexRoute } from '@/routes/request'
 
 export default function CollectionsPage() {
-
-    // const res = useLoaderData({from: "/"});
-    const [collections, setCollections] = useState<{ id: number; name: string }[]>([])
+    const loaderCollections = useLoaderData({from: "/"});
+    const [collections, setCollections] = useState<{ id: number; name: string }[]>(loaderCollections)
     const [name, setName] = useState('');
-    const [loading, setLoading] = useState(false)
+    const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        setLoading(true);
-        api.collections
-            .get()
-            .then(({ data }) => {
-                // if data is null, default to an empty array
-                setCollections(data ?? [])
-            })
-            .catch(console.error)
-            .finally(() => setLoading(false));
-    }, [])
+        if (collections.length > 0) {
+            setLoading(false);
+        }
+    }, [collections])
 
     const create = async () => {
         if (!name) return;

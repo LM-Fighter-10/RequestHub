@@ -1,4 +1,4 @@
-import { Elysia } from 'elysia'
+import { Elysia, t } from 'elysia'
 import cors from '@elysiajs/cors'
 import { methods } from './handlers'
 
@@ -40,16 +40,17 @@ const app = new Elysia()
     .get('/requests/:id', async ({ params }) =>
         methods.getRequest({ id: Number(params.id) })
     )
-    .post('/requests', async ({ request }) => {
-        const body = (await request.json()) as {
-            collectionId: number
-            name: string
-            method: string
-            url: string
-            headers: Record<string, string>
-            body: any
-        }
+    .post('/requests', async ({ body }) => {
         return methods.createRequest(body)
+    },{
+        body: t.Object({
+            collectionId: t.Number(),
+            name: t.String(),
+            method: t.String(),
+            url: t.String(),
+            headers: t.Record(t.String(), t.String()),
+            body: t.Any()
+        })
     })
     .put('/requests/:id', async ({ params, request }) => {
         const id = Number(params.id)
